@@ -1,0 +1,7 @@
+megs: 32
+romimage: file=$BXSHARE/BIOS-bochs-latest
+vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
+vga: extension=vbe
+
+floppya: 1_44=totalitarian, status=inserted
+boot: a
