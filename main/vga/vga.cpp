@@ -4,7 +4,7 @@
 
 
 
-namespace ShitOS {
+namespace JacOS {
     namespace Vga {
         uint16_t *vga_base = (uint16_t*)0xB8000;
         uint8_t col = 0;
@@ -13,7 +13,7 @@ namespace ShitOS {
 
 
 
-        void SetColor(uint8_t color) {
+        void SetColor(uint8_t col) {
             color = col;
         }
 
@@ -55,6 +55,18 @@ namespace ShitOS {
                 }
                 string++;
             }
+        }
+
+        void PrintChar(char c) {
+            if (c == '\n') {
+                col = 0;
+                row++;
+                CheckScroll();
+                return;
+            }
+
+            vga_base[col + row * 80] = (color << 8) | c;
+            col++;
         }
 
         void UpdateCursor() {

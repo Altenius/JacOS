@@ -8,7 +8,7 @@ AS = $(TARGET)-as
 CRTBEGIN_OBJ=$(shell $(CXX) $(CXXFLAGS) -print-file-name=crtbegin.o)
 CRTEND_OBJ=$(shell $(CXX) $(CXXFLAGS) -print-file-name=crtend.o)
 
-MAINOBJS = load.o arch/cpu.o interrupt/idt.o kernel.o vga/vga.o util/memory.o util/string.o interrupt/interrupt.o mm/memm.o
+MAINOBJS = load.o arch/cpu.o interrupt/idt.o kernel.o vga/vga.o util/memory.o util/string.o interrupt/interrupt.o mm/memm.o arch/task.o io/io.o io/apic.o io/pic.o mm/alloc.o device/keyboard.o process.o io/pit.o timer.o scheduler.o
 SHITOBJS = crti.o crtn.o $(MAINOBJS) end.o
 
 OBJS = crti.o $(CRTBEGIN_OBJ) $(MAINOBJS) crtn.o $(CRTEND_OBJ) end.o # end.o MUST be last
@@ -22,7 +22,7 @@ default: main.bin
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 main.bin: $(SHITOBJS) linker.ld
-	$(CXX) $(CXXFLAGS) -Wl,-Ttext,100000 -Wl,-z,max-page-size=0x1000 $(OBJS) -o $@
+	$(CXX) $(CXXFLAGS) -T linker.ld -Wl,-z,max-page-size=0x1000 $(OBJS) -g -o $@
 
 clean:
 	rm -f $(SHITOBJS)

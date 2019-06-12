@@ -17,7 +17,10 @@ trash: boot/boot main/main
 	cat boot/boot main/main > $@
 
 run: shitos.iso
-	qemu-system-x86_64 $< -d int
+	qemu-system-x86_64 $<
+
+run-kvm: shitos.iso
+	qemu-system-x86_64 -enable-kvm $<
 
 force_look:
 	true

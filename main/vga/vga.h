@@ -30,13 +30,14 @@ void print_uint32(uint32_t n);
 void print_uint64(uint64_t n);
 void update_cursor(void);
 
-namespace ShitOS {
+namespace JacOS {
 	namespace Vga {
 		void SetColor(uint8_t color);
 		void CheckScroll();
 		void ClearLine();
 		void Clear();
 		void PrintString(const char *string);
+		void PrintChar(char c);
 		void UpdateCursor();
 	}
 }

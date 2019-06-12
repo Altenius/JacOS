@@ -4,7 +4,7 @@
 
 #define MEM_MAX_ENTRIES 30
 
-namespace ShitOS {
+namespace JacOS {
 	typedef struct {
 	    uint64_t addr;
 	    uint64_t length;

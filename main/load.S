@@ -19,18 +19,24 @@
 gdt64:
     .word 0, 0
     .byte 0, 0, 0, 0 /* null descriptor */
-    lgdt_code:
+    lgdt_code: /* 0x8 */
     .word 0, 0
     .byte 0
     .byte 0b10011010
     .byte 0b00100000
     .byte 0
-    lgdt_data:
+    lgdt_data: /* 0x10 */
     .word 0, 0
     .byte 0
     .byte 0b10010010
     .byte 0b00000000
     .byte 0
+    tss_desc:
+    .word 0x67 /* sizeof TSS? */
+    .word 0 /* skip base addr */
+    .word 0b1000100100000000
+    .word 0
+    .word 0, 0, 0, 0
     gdt_ptr:
     .word gdt_ptr - gdt64 - 1 /* limit */
     .quad gdt64
@@ -69,6 +75,15 @@ stack_top:
 .code32
 _start:
     mov esp, offset stack_top
+
+    mov [tss + 4], esp /* move to rsp0 */
+    mov ecx, tss
+    mov [tss_desc + 2], cx /* base 15:00 */
+    shr ecx, 16
+    mov [tss_desc + 4], cl /* base 23:16 */
+    mov [tss_desc + 7], ch /* base 31:24 */
+
+
 
     pushd 0
     push eax /* multiboot magic value */
@@ -114,11 +129,9 @@ map_p2_table:
     mov eax, offset p4_table
     or eax, 0b11
     mov [p4_table + 511 * 8], eax
+    
 
-
-
-
-    /* Map memory management tables */
+    /* Map memory for the page stack */
     mov eax, offset mem3_table
     or eax, 0b11
     mov [p4_table + 510 * 8], eax
@@ -184,7 +197,7 @@ no_sse:
 .code64
 load_64:
     mov ax, GDT_DATA
-    mov dx, ax
+    mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
@@ -194,7 +207,6 @@ load_64:
     pop rdi /* multiboot magic number */
     call kernel
 
-    cli
     h:
     hlt
     jmp h

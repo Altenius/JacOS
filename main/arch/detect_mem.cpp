@@ -6,7 +6,7 @@
 #define MEM_MAP_START 0x6000
 #define MEM_MAP_SIZE 0x5998
 
-namespace ShitOS {
+namespace JacOS {
     uint64_t total_memory, total_usable_memory;
 
     uint16_t mem_entries_len;

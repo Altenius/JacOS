@@ -5,16 +5,10 @@
 #include "../util/memory.h"
 #include "memm.h"
 
-namespace ShitOS {
+namespace JacOS {
 	extern uint64_t end;
 
 	namespace Page {
-		PML *pml4 = (PML*) 0xFFFFFFFFFFFFF000UL;
-		PML *pcache_table = (PML*) 0x0000000000403000UL;
-		PML *pcache_page = (PML*) 0x0000000000404000UL;
-		PML *pcache_pml = (PML*) 0x0000000000405000UL;
-
-		uint64_t *stack = (uint64_t*) 0xFFFFFF0000000000UL;
 		size_t stack_size = 512;
 		size_t stack_used = 0;
 
@@ -34,31 +28,21 @@ namespace ShitOS {
 				length -= (end_page - addr);
 				addr = end_page;
 			}
+
+		}
+
+		static bool PageUsable(uint64_t addr) {
+			return addr != 0xFEE0000;
 		}
 
 		void Init(multiboot_info_t *bootinfo) {
 			// end_page = Page::AlignUp((uint64_t)(&end) + 1);
-			end_page = 0x0000000000406000UL;
-
-			Vga::PrintString(uqtohs(end_page));
-			Vga::PrintString("\n");
+			end_page = 0x0000000000408000UL;
 
 			if (!(bootinfo->flags & MULTIBOOT_INFO_MEM_MAP)) {
 				Vga::PrintString("memory map not set\n");
 				return;
 			}
-
-			Vga::PrintString(uqtohs(Page::pml4->entries[0]));
-			Vga::PrintString("\n");
-
-			Page::AddPage(23);
-			Vga::PrintString(uqtos(Page::GetPage()));
-			Vga::PrintString("\n");
-
-			Vga::PrintString(uqtos(Page::pcache_table->entries[4]));
-			Vga::PrintString("\n");
-
-			Page::ExtendStack();
 
 			multiboot_memory_map_t *entry = (multiboot_memory_map_t *)bootinfo->mmap_addr;
 
@@ -83,7 +67,9 @@ namespace ShitOS {
 				uint64_t astop = addr + length;
 
 				for (; addr < astop; addr += 4096) {
-					Page::AddPage(addr);
+					if (PageUsable(addr)) {
+						Page::AddPage(addr);
+					}
 				}
 			}
 
@@ -107,26 +93,19 @@ namespace ShitOS {
 			return stack[--stack_used];
 		}
 
-		static void Flush() {
+		static inline void Flush() {
 			uint64_t previous;
 			asm ( "mov %%cr3, %0" : "=r"(previous) );
 			asm volatile ( "mov %0, %%cr3" : : "r"(previous) );
 		}
 
-		static void InvalidatePage(uint64_t addr) {
-			asm ("invlpg %0" : : "m"(addr));
-		}
-
-		void Map(uint64_t phys_addr, uint64_t virt_addr, int prot) {
-
+		void Map(uint64_t phys_addr, uint64_t virt_addr, int prot, PML *pml) {
 			const size_t MASK = (1 << 9) - 1;
-			uint64_t entries[4];
+			uint16_t entries[4];
 
 			for (int i = 0; i < 4; i++) {
 				entries[i] = (virt_addr >> (12 + i * 9)) & MASK;
 			}
-
-			PML *pml = pml4;
 
 			for (int i = 3; i > 0; i--) {
 				uint64_t entry = pml->entries[entries[i]];
@@ -140,9 +119,10 @@ namespace ShitOS {
 						return;
 					}
 
-					entry = page | PML_PRESENT | PML_READWRITE | PML_CACHEDISABLE;
+					entry = page | PML_PRESENT | prot;
+					
 					pml->entries[entries[i]] = entry;
-
+					
 					pcache_table->entries[4] = entry;
 					InvalidatePage((uint64_t)pcache_page);
 
@@ -154,7 +134,7 @@ namespace ShitOS {
 				pml = pcache_pml;
 			}
 
-			pml->entries[entries[0]] = phys_addr | PML_PRESENT | PML_READWRITE | PML_USERMODE;
+			pml->entries[entries[0]] = phys_addr | PML_PRESENT | prot;
 			InvalidatePage(virt_addr);
 		}
 

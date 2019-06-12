@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace ShitOS {
+namespace JacOS {
 	size_t end;
 }
